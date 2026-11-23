@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe Modern</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti untuk perayaan kemenangan -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top left, #1e1b4b, #0f172a 60%, #020617);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Animasi masuk simbol X dan O */
+        @keyframes popIn {
+            0% {
+                transform: scale(0.3) rotate(-15deg);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1.12) rotate(3deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        /* Animasi kotak yang menang */
+        @keyframes winPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.06);
+            }
+        }
+
+        .symbol-appear {
+            animation: popIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .cell-win-x {
+            animation: winPulse 1.4s infinite ease-in-out;
+            background: rgba(6, 182, 212, 0.2) !important;
+            border-color: #22d3ee !important;
+            box-shadow: 0 0 25px rgba(34, 211, 238, 0.35), inset 0 0 15px rgba(34, 211, 238, 0.2);
+        }
+
+        .cell-win-o {
+            animation: winPulse 1.4s infinite ease-in-out;
+            background: rgba(244, 63, 94, 0.2) !important;
+            border-color: #fb7185 !important;
+            box-shadow: 0 0 25px rgba(251, 113, 133, 0.35), inset 0 0 15px rgba(251, 113, 133, 0.2);
+        }
+
+        /* Efek pendaran untuk giliran aktif */
+        .active-turn-x {
+            border-color: #22d3ee !important;
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .active-turn-o {
+            border-color: #fb7185 !important;
+            box-shadow: 0 0 20px rgba(251, 113, 133, 0.25);
+            transform: translateY(-2px);
+        }
+
+        /* Garis kemenangan SVG */
+        #win-line {
+            stroke-dasharray: 450;
+            stroke-dashoffset: 450;
+            transition: stroke-dashoffset 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Dekorasi background blur */
+        .bg-blob {
+            filter: blur(80px);
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col items-center justify-center p-4 relative overflow-x-hidden">
+
+    <!-- Efek Cahaya Latar Belakang -->
+    <div class="fixed top-[-10%] left-[-10%] w-80 h-80 bg-cyan-500/20 rounded-full bg-blob pointer-events-none"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-80 h-80 bg-rose-500/20 rounded-full bg-blob pointer-events-none"></div>
+
+    <!-- Kontainer Utama -->
+    <main class="w-full max-w-md z-10 flex flex-col gap-4">
+        
+        <!-- Header & Kontrol Suara -->
+        <header class="flex items-center justify-between bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 px-5 py-3.5 rounded-3xl shadow-xl">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 to-rose-500 p-0.5 shadow-lg">
+                    <div class="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center font-extrabold text-lg tracking-tighter">
+                        <span class="text-cyan-400">X</span><span class="text-rose-400">O</span>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-cyan-300 via-white to-rose-300 bg-clip-text text-transparent">
+                        Tic Tac Toe
+                    </h1>
+                    <p class="text-[11px] text-slate-400 font-medium">Edisi Neon Modern</p>
+                </div>
+            </div>
+
+            <!-- Tombol Efek Suara -->
+            <button id="btn-sound" onclick="toggleSound()" title="Matikan/Nyalakan Suara"
+                class="p-2.5 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/60 transition-all active:scale-95">
+                <svg id="icon-sound-on" class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+                <svg id="icon-sound-off" class="w-5 h-5 text-slate-500 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                </svg>
+            </button>
+        </header>
+
+        <!-- Pengaturan Mode & Tingkat Kesulitan -->
+        <section class="bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 p-2.5 rounded-3xl shadow-xl flex flex-col gap-2">
+            <!-- Pilihan Mode: Lawan AI vs 2 Pemain -->
+            <div class="grid grid-cols-2 gap-1.5 bg-slate-950/60 p-1.5 rounded-2xl">
+                <button id="mode-ai" onclick="setGameMode('ai')"
+                    class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span>Lawan AI</span>
+                </button>
+                <button id="mode-pvp" onclick="setGameMode('pvp')"
+                    class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all text-slate-400 hover:text-slate-200">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span>2 Pemain</span>
+                </button>
+            </div>
+
+            <!-- Pilihan Kesulitan AI (Hanya tampil saat Mode AI) -->
+            <div id="ai-difficulty-panel" class="flex items-center justify-between px-2 pt-1 pb-0.5 text-xs transition-all">
+                <span class="text-slate-400 font-semibold">Tingkat Kecerdasan AI:</span>
+                <div class="flex gap-1 bg-slate-950/50 p-1 rounded-xl border border-slate-800">
+                    <button id="diff-easy" onclick="setDifficulty('easy')" class="px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+                        Santai
+                    </button>
+                    <button id="diff-hard" onclick="setDifficulty('hard')" class="px-2.5 py-1 rounded-lg font-semibold bg-slate-800 text-cyan-400 shadow transition-all">
+                        Jenius
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Papan Skor -->
+        <section class="grid grid-cols-3 gap-2.5">
+            <!-- Skor Pemain X -->
+            <div id="card-x" class="bg-slate-900/75 backdrop-blur-xl border-2 border-slate-800/90 rounded-3xl p-3 flex flex-col items-center justify-center transition-all duration-300 active-turn-x">
+                <div class="flex items-center gap-1.5 text-cyan-400 font-extrabold text-xs uppercase tracking-wider">
+                    <span>●</span>
+                    <span id="label-player-x">Pemain X</span>
+                </div>
+                <div id="score-x" class="text-2xl sm:text-3xl font-extrabold text-white mt-0.5">0</div>
+            </div>
+
+            <!-- Skor Seri -->
+            <div class="bg-slate-900/75 backdrop-blur-xl border-2 border-slate-800/90 rounded-3xl p-3 flex flex-col items-center justify-center">
+                <div class="text-slate-400 font-extrabold text-xs uppercase tracking-wider">Seri</div>
+                <div id="score-tie" class="text-2xl sm:text-3xl font-extrabold text-slate-200 mt-0.5">0</div>
+            </div>
+
+            <!-- Skor Pemain O / AI -->
+            <div id="card-o" class="bg-slate-900/75 backdrop-blur-xl border-2 border-slate-800/90 rounded-3xl p-3 flex flex-col items-center justify-center transition-all duration-300">
+                <div class="flex items-center gap-1.5 text-rose-400 font-extrabold text-xs uppercase tracking-wider">
+                    <span>●</span>
+                    <span id="label-player-o">Komputer</span>
+                </div>
+                <div id="score-o" class="text-2xl sm:text-3xl font-extrabold text-white mt-0.5">0</div>
+            </div>
+        </section>
+
+        <!-- Banner Status Giliran / Pengumuman Pemenang -->
+        <div id="status-banner" class="bg-slate-900/80 backdrop-blur-xl border border-slate-800/90 rounded-2xl py-3 px-4 flex items-center justify-center gap-2.5 shadow-lg transition-all duration-300">
+            <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></div>
+            <p id="status-text" class="text-sm sm:text-base font-bold text-slate-100 tracking-wide">
+                Giliran <span class="text-cyan-400">Pemain X</span> melangkah
+            </p>
+        </div>
+
+        <!-- Area Papan Permainan 3x3 -->
+        <section class="relative bg-slate-900/70 backdrop-blur-2xl border border-slate-800/90 p-4 rounded-[32px] shadow-2xl">
+            
+            <!-- Grid 3x3 -->
+            <div id="board-grid" class="grid grid-cols-3 gap-3 sm:gap-3.5 aspect-square w-full">
+                <!-- 9 Kotak di-render oleh JavaScript -->
+            </div>
+
+            <!-- Overlay Garis Kemenangan SVG -->
+            <svg id="win-svg" viewBox="0 0 300 300" class="absolute inset-0 w-full h-full pointer-events-none p-4 hidden">
+                <line id="win-line" x1="50" y1="50" x2="250" y2="50" stroke="#22d3ee" stroke-width="10" stroke-linecap="round" />
+            </svg>
+        </section>
+
+        <!-- Tombol Aksi Bawah -->
+        <footer class="grid grid-cols-2 gap-3">
+            <button onclick="resetRound()"
+                class="flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl font-bold text-sm bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white shadow-lg shadow-cyan-500/20 active:scale-95 transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Ronde Baru</span>
+            </button>
+
+            <button onclick="resetAllScores()"
+                class="flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl font-bold text-sm bg-slate-800/90 hover:bg-slate-700/90 text-slate-300 border border-slate-700/80 active:scale-95 transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Reset Skor</span>
+            </button>
+        </footer>
+    </main>
+
+    <script>
+        /* ==========================================================================
+           STATE & KONFIGURASI GAME
+           ========================================================================== */
+        let board = Array(9).fill(null);
+        let currentPlayer = 'X';
+        let isGameActive = true;
+        let isAiThinking = false;
+        let gameMode = 'ai';       // 'ai' atau 'pvp'
+        let aiDifficulty = 'hard'; // 'easy' atau 'hard'
+        let soundEnabled = true;
+
+        let scores = {
+            X: 0,
+            O: 0,
+            tie: 0
+        };
+
+        // Kombinasi indeks kemenangan beserta koordinat garis SVG (skala 0-300)
+        const WIN_COMBINATIONS = [
+            { indices: [0, 1, 2], coords: { x1: 35, y1: 50,  x2: 265, y2: 50  } }, // Baris Atas
+            { indices: [3, 4, 5], coords: { x1: 35, y1: 150, x2: 265, y2: 150 } }, // Baris Tengah
+            { indices: [6, 7, 8], coords: { x1: 35, y1: 250, x2: 265, y2: 250 } }, // Baris Bawah
+            { indices: [0, 3, 6], coords: { x1: 50,  y1: 35, x2: 50,  y2: 265 } }, // Kolom Kiri
+            { indices: [1, 4, 7], coords: { x1: 150, y1: 35, x2: 150, y2: 265 } }, // Kolom Tengah
+            { indices: [2, 5, 8], coords: { x1: 250, y1: 35, x2: 250, y2: 265 } }, // Kolom Kanan
+            { indices: [0, 4, 8], coords: { x1: 38,  y1: 38, x2: 262, y2: 262 } }, // Diagonal Utama
+            { indices: [2, 4, 6], coords: { x1: 262, y1: 38, x2: 38,  y2: 262 } }  // Diagonal Terbalik
+        ];
+
+        /* ==========================================================================
+           EFEK SUARA SINTETIS (WEB AUDIO API - TANPA FILE EKSTERNAL)
+           ========================================================================== */
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    audioCtx = new AudioContextClass();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playTone(freq, type = 'sine', duration = 0.12, delay = 0, volume = 0.12) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const startTime = ctx.currentTime + delay;
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, startTime);
+
+                gain.gain.setValueAtTime(volume, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            } catch (e) {
+                // Abaikan jika browser memblokir autoplay audio
+            }
+        }
+
+        function playSoundEffect(effect) {
+            if (!soundEnabled) return;
+            if (effect === 'moveX') {
+                playTone(520, 'sine', 0.11, 0, 0.14);
+            } else if (effect === 'moveO') {
+                playTone(390, 'sine', 0.12, 0, 0.14);
+            } else if (effect === 'win') {
+                playTone(523.25, 'triangle', 0.15, 0, 0.16);    // C5
+                playTone(659.25, 'triangle', 0.15, 0.11, 0.16); // E5
+                playTone(783.99, 'triangle', 0.15, 0.22, 0.16); // G5
+                playTone(1046.50, 'triangle', 0.35, 0.33, 0.18);// C6
+            } else if (effect === 'tie') {
+                playTone(340, 'sine', 0.15, 0, 0.12);
+                playTone(280, 'sine', 0.25, 0.14, 0.12);
+            } else if (effect === 'click') {
+                playTone(700, 'sine', 0.06, 0, 0.08);
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const iconOn = document.getElementById('icon-sound-on');
+            const iconOff = document.getElementById('icon-sound-off');
+            if (soundEnabled) {
+                iconOn.classList.remove('hidden');
+                iconOff.classList.add('hidden');
+                playSoundEffect('click');
+            } else {
+                iconOn.classList.add('hidden');
+                iconOff.classList.remove('hidden');
+            }
+        }
+
+        /* ==========================================================================
+           TEMPLATE IKON SVG X DAN O
+           ========================================================================== */
+        function getSymbolSVG(player) {
+            if (player === 'X') {
+                return `
+                    <svg class="w-12 h-12 sm:w-14 sm:h-14 text-cyan-400 drop-shadow-[0_0_12px_rgba(34,211,238,0.65)] symbol-appear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                        <line x1="5" y1="5" x2="19" y2="19"></line>
+                        <line x1="19" y1="5" x2="5" y2="19"></line>
+                    </svg>
+                `;
+            } else {
+                return `
+                    <svg class="w-12 h-12 sm:w-14 sm:h-14 text-rose-400 drop-shadow-[0_0_12px_rgba(251,113,133,0.65)] symbol-appear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <circle cx="12" cy="12" r="7.5"></circle>
+                    </svg>
+                `;
+            }
+        }
+
+        /* ==========================================================================
+           INISIALISASI & RENDER PAPAN
+           ========================================================================== */
+        function initBoard() {
+            const boardGrid = document.getElementById('board-grid');
+            boardGrid.innerHTML = '';
+
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('button');
+                cell.id = `cell-${i}`;
+                cell.setAttribute('aria-label', `Kotak ${i + 1}`);
+                cell.className = `
+                    group relative flex items-center justify-center
+                    bg-slate-950/70 hover:bg-slate-800/80
+                    border-2 border-slate-800/90 hover:border-slate-700
+                    rounded-2xl transition-all duration-200
+                    active:scale-95 focus:outline-none
+                `;
+                cell.onclick = () => handleCellClick(i);
+                boardGrid.appendChild(cell);
+            }
+        }
+
+        /* ==========================================================================
+           LOGIKA INTERAKSI PEMAIN
+           ========================================================================== */
+        function handleCellClick(index) {
+            // Cegah klik jika kotak sudah terisi, game selesai, atau AI sedang berpikir
+            if (!isGameActive || board[index] !== null || isAiThinking) {
+                return;
+            }
+
+            executeMove(index, currentPlayer);
+
+            // Jika game masih berlanjut dan dalam mode lawan AI, panggil langkah AI
+            if (isGameActive && gameMode === 'ai' && currentPlayer === 'O') {
+                isAiThinking = true;
+                updateStatusBanner();
+                setTimeout(() => {
+                    makeAiMove();
+                    isAiThinking = false;
+                }, 460);
+            }
+        }
+
+        function executeMove(index, player) {
+            board[index] = player;
+            const cell = document.getElementById(`cell-${index}`);
+            cell.innerHTML = getSymbolSVG(player);
+            cell.classList.remove('hover:bg-slate-800/80', 'hover:border-slate-700');
+            cell.classList.add('cursor-default');
+
+            playSoundEffect(player === 'X' ? 'moveX' : 'moveO');
+
+            // Cek apakah langkah ini menghasilkan kemenangan
+            const winResult = checkWin(board);
+            if (winResult) {
+                handleGameWin(winResult);
+                return;
+            }
+
+            // Cek apakah papan penuh (Seri)
+            if (board.every(cell => cell !== null)) {
+                handleGameTie();
+                return;
+            }
+
+            // Ganti giliran pemain
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            updateTurnHighlight();
+            updateStatusBanner();
+        }
+
+        /* ==========================================================================
+           DETEKSI KEMENANGAN & ANIMASI
+           ========================================================================== */
+        function checkWin(currentBoard) {
+            for (const combo of WIN_COMBINATIONS) {
+                const [a, b, c] = combo.indices;
+                if (
+                    currentBoard[a] &&
+                    currentBoard[a] === currentBoard[b] &&
+                    currentBoard[a] === currentBoard[c]
+                ) {
+                    return {
+                        winner: currentBoard[a],
+                        indices: combo.indices,
+                        coords: combo.coords
+                    };
+                }
+            }
+            return null;
+        }
+
+        function handleGameWin(winResult) {
+            isGameActive = false;
+            const { winner, indices, coords } = winResult;
+
+            // Tambah skor
+            scores[winner]++;
+            updateScoreDisplay();
+
+            // Highlight 3 kotak yang menang
+            const winClass = winner === 'X' ? 'cell-win-x' : 'cell-win-o';
+            indices.forEach(idx => {
+                document.getElementById(`cell-${idx}`).classList.add(winClass);
+            });
+
+            // Gambar garis kemenangan SVG dengan animasi
+            drawWinLine(coords, winner);
+
+            // Suara & Confetti
+            playSoundEffect('win');
+            triggerConfetti(winner);
+
+            // Update teks banner
+            const winnerName = getPlayerLabel(winner);
+            const colorClass = winner === 'X' ? 'text-cyan-400' : 'text-rose-400';
+            const dotColor = winner === 'X' ? 'bg-cyan-400' : 'bg-rose-400';
+
+            const statusDot = document.getElementById('status-dot');
+            statusDot.className = `w-3 h-3 rounded-full ${dotColor}`;
+            document.getElementById('status-text').innerHTML = `
+                🎉 <span class="${colorClass} font-extrabold">${winnerName}</span> Menang!
+            `;
+        }
+
+        function handleGameTie() {
+            isGameActive = false;
+            scores.tie++;
+            updateScoreDisplay();
+            playSoundEffect('tie');
+
+            const statusDot = document.getElementById('status-dot');
+            statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+            document.getElementById('status-text').innerHTML = `
+                🤝 Permainan <span class="text-amber-400 font-extrabold">Seri!</span>
+            `;
+
+            document.getElementById('card-x').classList.remove('active-turn-x');
+            document.getElementById('card-o').classList.remove('active-turn-o');
+        }
+
+        function drawWinLine(coords, winner) {
+            const svg = document.getElementById('win-svg');
+            const line = document.getElementById('win-line');
+
+            line.setAttribute('x1', coords.x1);
+            line.setAttribute('y1', coords.y1);
+            line.setAttribute('x2', coords.x2);
+            line.setAttribute('y2', coords.y2);
+            line.setAttribute('stroke', winner === 'X' ? '#22d3ee' : '#fb7185');
+
+            svg.classList.remove('hidden');
+            line.style.strokeDashoffset = '450';
+
+            // Trigger reflow agar animasi garis berjalan mulus
+            void line.getBoundingClientRect();
+            line.style.strokeDashoffset = '0';
+        }
+
+        function triggerConfetti(winner) {
+            if (typeof confetti !== 'function') return;
+            const colors = winner === 'X' ? ['#22d3ee', '#38bdf8', '#ffffff'] : ['#fb7185', '#f43f5e', '#ffffff'];
+            confetti({
+                particleCount: 65,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: colors
+            });
+        }
+
+        /* ==========================================================================
+           KECERDASAN BUATAN (AI - SANTAI & MINIMAX JENIUS)
+           ========================================================================== */
+        function makeAiMove() {
+            if (!isGameActive) return;
+
+            let chosenIndex = null;
+
+            if (aiDifficulty === 'easy') {
+                // Mode Santai: 45% langkah pintar, 55% langkah acak
+                if (Math.random() < 0.45) {
+                    chosenIndex = getBestMoveMinimax(board, 'O');
+                } else {
+                    const emptyIndices = board
+                        .map((val, idx) => (val === null ? idx : null))
+                        .filter(val => val !== null);
+                    chosenIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+                }
+            } else {
+                // Mode Jenius: Algoritma Minimax tak terkalahkan
+                chosenIndex = getBestMoveMinimax(board, 'O');
+            }
+
+            if (chosenIndex !== null && chosenIndex !== undefined) {
+                executeMove(chosenIndex, 'O');
+            }
+        }
+
+        function getBestMoveMinimax(currentBoard, aiPlayer) {
+            // Jika papan masih kosong atau baru 1 langkah dan tengah kosong, ambil tengah untuk efisiensi
+            if (currentBoard[4] === null) {
+                return 4;
+            }
+
+            let bestScore = -Infinity;
+            let bestMoves = [];
+
+            for (let i = 0; i < 9; i++) {
+                if (currentBoard[i] === null) {
+                    currentBoard[i] = aiPlayer;
+                    const score = minimax(currentBoard, 0, false);
+                    currentBoard[i] = null;
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMoves = [i];
+                    } else if (score === bestScore) {
+                        bestMoves.push(i);
+                    }
+                }
+            }
+
+            // Pilih acak di antara langkah terbaik agar variasi permainan terasa alami
+            return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+        }
+
+        function minimax(tempBoard, depth, isMaximizing) {
+            const winCheck = checkWin(tempBoard);
+            if (winCheck) {
+                return winCheck.winner === 'O' ? 10 - depth : depth - 10;
+            }
+            if (tempBoard.every(cell => cell !== null)) {
+                return 0;
+            }
+
+            if (isMaximizing) {
+                let best = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (tempBoard[i] === null) {
+                        tempBoard[i] = 'O';
+                        best = Math.max(best, minimax(tempBoard, depth + 1, false));
+                        tempBoard[i] = null;
+                    }
+                }
+                return best;
+            } else {
+                let best = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (tempBoard[i] === null) {
+                        tempBoard[i] = 'X';
+                        best = Math.min(best, minimax(tempBoard, depth + 1, true));
+                        tempBoard[i] = null;
+                    }
+                }
+                return best;
+            }
+        }
+
+        /* ==========================================================================
+           PEMBARUAN UI & PENGATURAN MODE
+           ========================================================================== */
+        function getPlayerLabel(player) {
+            if (player === 'X') {
+                return gameMode === 'ai' ? 'Kamu (X)' : 'Pemain X';
+            } else {
+                return gameMode === 'ai' ? 'Komputer' : 'Pemain O';
+            }
+        }
+
+        function updateTurnHighlight() {
+            const cardX = document.getElementById('card-x');
+            const cardO = document.getElementById('card-o');
+
+            if (currentPlayer === 'X') {
+                cardX.classList.add('active-turn-x');
+                cardO.classList.remove('active-turn-o');
+            } else {
+                cardX.classList.remove('active-turn-x');
+                cardO.classList.add('active-turn-o');
+            }
+        }
+
+        function updateStatusBanner() {
+            if (!isGameActive) return;
+
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+
+            if (gameMode === 'ai' && currentPlayer === 'O') {
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-400 animate-ping';
+                statusText.innerHTML = `Komputer sedang berpikir...`;
+            } else {
+                const label = getPlayerLabel(currentPlayer);
+                const colorClass = currentPlayer === 'X' ? 'text-cyan-400' : 'text-rose-400';
+                const dotColor = currentPlayer === 'X' ? 'bg-cyan-400' : 'bg-rose-400';
+
+                statusDot.className = `w-2.5 h-2.5 rounded-full ${dotColor} animate-ping`;
+                statusText.innerHTML = `Giliran <span class="${colorClass}">${label}</span> melangkah`;
+            }
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('score-x').textContent = scores.X;
+            document.getElementById('score-o').textContent = scores.O;
+            document.getElementById('score-tie').textContent = scores.tie;
+        }
+
+        function setGameMode(mode) {
+            if (gameMode === mode) return;
+            playSoundEffect('click');
+            gameMode = mode;
+
+            const btnAi = document.getElementById('mode-ai');
+            const btnPvp = document.getElementById('mode-pvp');
+            const diffPanel = document.getElementById('ai-difficulty-panel');
+            const labelX = document.getElementById('label-player-x');
+            const labelO = document.getElementById('label-player-o');
+
+            if (mode === 'ai') {
+                btnAi.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20';
+                btnPvp.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all text-slate-400 hover:text-slate-200';
+                diffPanel.classList.remove('hidden');
+                labelX.textContent = 'Kamu (X)';
+                labelO.textContent = 'Komputer';
+            } else {
+                btnPvp.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/20';
+                btnAi.className = 'flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all text-slate-400 hover:text-slate-200';
+                diffPanel.classList.add('hidden');
+                labelX.textContent = 'Pemain X';
+                labelO.textContent = 'Pemain O';
+            }
+
+            resetAllScores();
+        }
+
+        function setDifficulty(level) {
+            if (aiDifficulty === level) return;
+            playSoundEffect('click');
+            aiDifficulty = level;
+
+            const btnEasy = document.getElementById('diff-easy');
+            const btnHard = document.getElementById('diff-hard');
+
+            if (level === 'easy') {
+                btnEasy.className = 'px-2.5 py-1 rounded-lg font-semibold bg-slate-800 text-cyan-400 shadow transition-all';
+                btnHard.className = 'px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition-all';
+            } else {
+                btnHard.className = 'px-2.5 py-1 rounded-lg font-semibold bg-slate-800 text-cyan-400 shadow transition-all';
+                btnEasy.className = 'px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white transition-all';
+            }
+
+            resetRound();
+        }
+
+        function resetRound() {
+            playSoundEffect('click');
+            board = Array(9).fill(null);
+            currentPlayer = 'X';
+            isGameActive = true;
+            isAiThinking = false;
+
+            // Sembunyikan garis kemenangan SVG
+            const svg = document.getElementById('win-svg');
+            const line = document.getElementById('win-line');
+            svg.classList.add('hidden');
+            line.style.strokeDashoffset = '450';
+
+            initBoard();
+            updateTurnHighlight();
+            updateStatusBanner();
+        }
+
+        function resetAllScores() {
+            scores = { X: 0, O: 0, tie: 0 };
+            updateScoreDisplay();
+            resetRound();
+        }
+
+        // Jalankan saat halaman selesai dimuat
+        window.onload = () => {
+            document.getElementById('label-player-x').textContent = 'Kamu (X)';
+            initBoard();
+            updateStatusBanner();
+        };
+    </script>
+</body>
+</html>
