@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Arcade Hub</title>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #334155;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.35);
+            --accent-secondary: #818cf8;
+            --success: #4ade80;
+            --danger: #f87171;
+            --warning: #fbbf24;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* Top Navigation / Header */
+        header {
+            width: 100%;
+            max-width: 900px;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .back-btn {
+            background: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.12);
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: none;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .back-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        /* Container */
+        main {
+            width: 100%;
+            max-width: 900px;
+            padding: 28px 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Main Menu Grid */
+        #menu-screen {
+            width: 100%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .hero-title {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .hero-title h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+
+        .hero-title p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+        .game-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 16px;
+            padding: 24px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card:hover {
+            transform: translateY(-6px);
+            background: var(--bg-card-hover);
+            border-color: var(--accent);
+            box-shadow: 0 12px 24px -8px var(--accent-glow);
+        }
+
+        .game-icon {
+            font-size: 3.2rem;
+            margin-bottom: 14px;
+        }
+
+        .game-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+        }
+
+        .game-card p {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            margin-bottom: 18px;
+            line-height: 1.4;
+        }
+
+        .play-badge {
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 8px 20px;
+            border-radius: 99px;
+            width: 100%;
+        }
+
+        /* Generic Game Screen Wrapper */
+        .game-screen {
+            display: none;
+            width: 100%;
+            max-width: 520px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 24px;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            animation: fadeIn 0.25s ease;
+        }
+
+        .game-screen.active {
+            display: flex;
+        }
+
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .game-header h2 {
+            font-size: 1.35rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-pill {
+            background: rgba(56, 189, 248, 0.12);
+            color: var(--accent);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 6px 14px;
+            border-radius: 99px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .btn-action {
+            margin-top: 18px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+            color: #0f172a;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn-action:hover {
+            opacity: 0.92;
+        }
+
+        .btn-action:active {
+            transform: scale(0.97);
+        }
+
+        .status-msg {
+            margin: 10px 0 16px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-main);
+            min-height: 26px;
+            text-align: center;
+        }
+
+        /* 1. Tic Tac Toe Styles */
+        .ttt-mode-switch {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            background: var(--bg-main);
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .ttt-mode-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .ttt-mode-btn.active {
+            background: var(--bg-card-hover);
+            color: var(--accent);
+        }
+
+        .ttt-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 10px;
+        }
+
+        .ttt-cell {
+            background: var(--bg-main);
+            border: 2px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.6rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .ttt-cell:hover:not(.taken) {
+            border-color: var(--accent);
+            background: rgba(56, 189, 248, 0.06);
+        }
+
+        .ttt-cell.x { color: var(--accent); }
+        .ttt-cell.o { color: var(--warning); }
+        .ttt-cell.win {
+            background: rgba(74, 222, 128, 0.2);
+            border-color: var(--success);
+        }
+
+        /* 2. Snake Styles */
+        #snake-canvas {
+            background: var(--bg-main);
+            border: 2px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+            max-width: 100%;
+        }
+
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 52px);
+            grid-template-rows: repeat(2, 48px);
+            gap: 6px;
+            margin-top: 14px;
+        }
+
+        .d-btn {
+            background: var(--bg-main);
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .d-btn:active {
+            background: var(--accent);
+            color: #000;
+        }
+
+        /* 3. Memory Match Styles */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 76px);
+            grid-template-rows: repeat(4, 76px);
+            gap: 10px;
+        }
+
+        .mem-card {
+            background: var(--bg-main);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s, border-color 0.2s;
+        }
+
+        .mem-card.hidden-card {
+            font-size: 0;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+        }
+
+        .mem-card.hidden-card::after {
+            content: "?";
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-muted);
+        }
+
+        .mem-card.matched {
+            background: rgba(74, 222, 128, 0.15);
+            border-color: var(--success);
+            cursor: default;
+        }
+
+        /* 4. Rock Paper Scissors Styles */
+        .rps-arena {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            margin: 14px 0 22px;
+            background: var(--bg-main);
+            padding: 20px;
+            border-radius: 16px;
+        }
+
+        .rps-fighter {
+            text-align: center;
+        }
+
+        .rps-hand {
+            font-size: 3.6rem;
+            height: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rps-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        .rps-choices {
+            display: flex;
+            gap: 14px;
+        }
+
+        .rps-btn {
+            background: var(--bg-main);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 14px 20px;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .rps-btn span {
+            font-size: 0.8rem;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .rps-btn:hover {
+            border-color: var(--accent);
+            transform: translateY(-4px);
+            background: rgba(56, 189, 248, 0.08);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            .ttt-board {
+                grid-template-columns: repeat(3, 86px);
+                grid-template-rows: repeat(3, 86px);
+            }
+            .memory-grid {
+                grid-template-columns: repeat(4, 65px);
+                grid-template-rows: repeat(4, 65px);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo" onclick="showMenu()">
+            <span>🕹️</span> Mini Arcade Hub
+        </div>
+        <button class="back-btn" id="back-btn" onclick="showMenu()">
+            ⬅ Kembali ke Menu
+        </button>
+    </header>
+
+    <main>
+        <!-- MAIN MENU SCREEN -->
+        <section id="menu-screen">
+            <div class="hero-title">
+                <h1>Pilih Game Kamu</h1>
+                <p>4 Mini Game Klasik dalam Satu Aplikasi</p>
+            </div>
+
+            <div class="game-grid">
+                <div class="game-card" onclick="openGame('ttt')">
+                    <div>
+                        <div class="game-icon">❌⭕</div>
+                        <h3>Tic Tac Toe</h3>
+                        <p>Duel klasik 3x3 lawan Bot pintar atau teman di sebelahmu.</p>
+                    </div>
+                    <div class="play-badge">Main Sekarang</div>
+                </div>
+
+                <div class="game-card" onclick="openGame('snake')">
+                    <div>
+                        <div class="game-icon">🐍🍎</div>
+                        <h3>Classic Snake</h3>
+                        <p>Kumpulkan apel sebanyak mungkin tanpa menabrak ekor sendiri.</p>
+                    </div>
+                    <div class="play-badge">Main Sekarang</div>
+                </div>
+
+                <div class="game-card" onclick="openGame('memory')">
+                    <div>
+                        <div class="game-icon">🃏🧠</div>
+                        <h3>Memory Match</h3>
+                        <p>Uji daya ingatmu dengan mencocokkan pasangan kartu emoji.</p>
+                    </div>
+                    <div class="play-badge">Main Sekarang</div>
+                </div>
+
+                <div class="game-card" onclick="openGame('rps')">
+                    <div>
+                        <div class="game-icon">✊✋✌️</div>
+                        <h3>Suit Jepang</h3>
+                        <p>Adu keberuntungan dan strategi Batu-Gunting-Kertas lawan Bot.</p>
+                    </div>
+                    <div class="play-badge">Main Sekarang</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 1. TIC TAC TOE SCREEN -->
+        <section id="game-ttt" class="game-screen">
+            <div class="game-header">
+                <h2>❌ Tic Tac Toe</h2>
+                <div class="score-pill" id="ttt-score">X: 0 | O: 0</div>
+            </div>
+
+            <div class="ttt-mode-switch">
+                <button class="ttt-mode-btn active" id="mode-bot" onclick="setTttMode('bot')">Lawan Bot 🤖</button>
+                <button class="ttt-mode-btn" id="mode-pvp" onclick="setTttMode('pvp')">2 Pemain 👥</button>
+            </div>
+
+            <div class="status-msg" id="ttt-status">Giliran Pemain X</div>
+
+            <div class="ttt-board" id="ttt-board"></div>
+
+            <button class="btn-action" onclick="initTtt()">Ulangi Ronde</button>
+        </section>
+
+        <!-- 2. SNAKE SCREEN -->
+        <section id="game-snake" class="game-screen">
+            <div class="game-header">
+                <h2>🐍 Classic Snake</h2>
+                <div class="score-pill" id="snake-score">Skor: 0 | Best: 0</div>
+            </div>
+
+            <div class="status-msg" id="snake-status">Gunakan Tombol Panah / WASD</div>
+
+            <canvas id="snake-canvas" width="320" height="320"></canvas>
+
+            <div class="d-pad">
+                <div></div>
+                <button class="d-btn" onclick="setSnakeDir(0, -1)">▲</button>
+                <div></div>
+                <button class="d-btn" onclick="setSnakeDir(-1, 0)">◀</button>
+                <button class="d-btn" onclick="setSnakeDir(0, 1)">▼</button>
+                <button class="d-btn" onclick="setSnakeDir(1, 0)">▶</button>
+            </div>
+
+            <button class="btn-action" onclick="startSnake()">Mulai / Reset Game</button>
+        </section>
+
+        <!-- 3. MEMORY MATCH SCREEN -->
+        <section id="game-memory" class="game-screen">
+            <div class="game-header">
+                <h2>🃏 Memory Match</h2>
+                <div class="score-pill" id="mem-moves">Langkah: 0</div>
+            </div>
+
+            <div class="status-msg" id="mem-status">Cari semua pasangan kartu!</div>
+
+            <div class="memory-grid" id="memory-grid"></div>
+
+            <button class="btn-action" onclick="initMemory()">Acak Ulang Kartu</button>
+        </section>
+
+        <!-- 4. ROCK PAPER SCISSORS SCREEN -->
+        <section id="game-rps" class="game-screen">
+            <div class="game-header">
+                <h2>✊ Suit Jepang</h2>
+                <div class="score-pill" id="rps-score">Kamu: 0 | Bot: 0</div>
+            </div>
+
+            <div class="status-msg" id="rps-status">Pilih senjatamu di bawah!</div>
+
+            <div class="rps-arena">
+                <div class="rps-fighter">
+                    <div class="rps-hand" id="rps-user-hand">❔</div>
+                    <div class="rps-label">KAMU</div>
+                </div>
+                <div style="font-weight: 800; color: var(--text-muted);">VS</div>
+                <div class="rps-fighter">
+                    <div class="rps-hand" id="rps-bot-hand">❔</div>
+                    <div class="rps-label">BOT</div>
+                </div>
+            </div>
+
+            <div class="rps-choices">
+                <button class="rps-btn" onclick="playRps('batu')">✊<span>Batu</span></button>
+                <button class="rps-btn" onclick="playRps('kertas')">✋<span>Kertas</span></button>
+                <button class="rps-btn" onclick="playRps('gunting')">✌️<span>Gunting</span></button>
+            </div>
+
+            <button class="btn-action" onclick="resetRps()">Reset Skor</button>
+        </section>
+    </main>
+
+    <script>
+        /* ================= NAVIGATION LOGIC ================= */
+        const menuScreen = document.getElementById('menu-screen');
+        const backBtn = document.getElementById('back-btn');
+        const gameScreens = document.querySelectorAll('.game-screen');
+
+        function showMenu() {
+            stopSnake();
+            gameScreens.forEach(s => s.classList.remove('active'));
+            menuScreen.style.display = 'block';
+            backBtn.style.display = 'none';
+        }
+
+        function openGame(gameId) {
+            menuScreen.style.display = 'none';
+            gameScreens.forEach(s => s.classList.remove('active'));
+            document.getElementById('game-' + gameId).classList.add('active');
+            backBtn.style.display = 'flex';
+
+            if (gameId === 'ttt') initTtt();
+            if (gameId === 'snake') startSnake();
+            if (gameId === 'memory') initMemory();
+            if (gameId === 'rps') resetRps();
+        }
+
+        /* ================= 1. TIC TAC TOE ================= */
+        let tttBoard = Array(9).fill('');
+        let tttTurn = 'X';
+        let tttActive = true;
+        let tttMode = 'bot'; // 'bot' or 'pvp'
+        let tttScores = { X: 0, O: 0 };
+        const winPatterns = [
+            [0,1,2],[3,4,5],[6,7,8],
+            [0,3,6],[1,4,7],[2,5,8],
+            [0,4,8],[2,4,6]
+        ];
+
+        function setTttMode(mode) {
+            tttMode = mode;
+            document.getElementById('mode-bot').classList.toggle('active', mode === 'bot');
+            document.getElementById('mode-pvp').classList.toggle('active', mode === 'pvp');
+            tttScores = { X: 0, O: 0 };
+            updateTttScore();
+            initTtt();
+        }
+
+        function initTtt() {
+            tttBoard = Array(9).fill('');
+            tttTurn = 'X';
+            tttActive = true;
+            document.getElementById('ttt-status').textContent = 'Giliran Pemain X';
+            renderTtt();
+        }
+
+        function renderTtt(winLine = []) {
+            const container = document.getElementById('ttt-board');
+            container.innerHTML = '';
+            tttBoard.forEach((val, idx) => {
+                const cell = document.createElement('div');
+                cell.className = 'ttt-cell' + (val ? ` taken ${val.toLowerCase()}` : '') + (winLine.includes(idx) ? ' win' : '');
+                cell.textContent = val;
+                cell.onclick = () => handleTttClick(idx);
+                container.appendChild(cell);
+            });
+        }
+
+        function handleTttClick(idx) {
+            if (!tttActive || tttBoard[idx] !== '') return;
+            makeTttMove(idx, tttTurn);
+
+            if (tttActive && tttMode === 'bot' && tttTurn === 'O') {
+                tttActive = false;
+                document.getElementById('ttt-status').textContent = 'Bot sedang berpikir...';
+                setTimeout(() => {
+                    tttActive = true;
+                    const botMove = getBestBotMove();
+                    if (botMove !== null) makeTttMove(botMove, 'O');
+                }, 380);
+            }
+        }
+
+        function makeTttMove(idx, player) {
+            tttBoard[idx] = player;
+            const winLine = checkTttWin(player);
+
+            if (winLine) {
+                tttActive = false;
+                tttScores[player]++;
+                updateTttScore();
+                document.getElementById('ttt-status').textContent = `🎉 Pemain ${player} Menang!`;
+                renderTtt(winLine);
+                return;
+            }
+
+            if (!tttBoard.includes('')) {
+                tttActive = false;
+                document.getElementById('ttt-status').textContent = '🤝 Hasil Seri!';
+                renderTtt();
+                return;
+            }
+
+            tttTurn = player === 'X' ? 'O' : 'X';
+            document.getElementById('ttt-status').textContent = `Giliran Pemain ${tttTurn}`;
+            renderTtt();
+        }
+
+        function getBestBotMove() {
+            // 1. Cek jika Bot bisa menang langsung
+            for (let i = 0; i < 9; i++) {
+                if (tttBoard[i] === '') {
+                    tttBoard[i] = 'O';
+                    if (checkTttWin('O')) { tttBoard[i] = ''; return i; }
+                    tttBoard[i] = '';
+                }
+            }
+            // 2. Blokir kemenangan X
+            for (let i = 0; i < 9; i++) {
+                if (tttBoard[i] === '') {
+                    tttBoard[i] = 'X';
+                    if (checkTttWin('X')) { tttBoard[i] = ''; return i; }
+                    tttBoard[i] = '';
+                }
+            }
+            // 3. Ambil tengah jika kosong
+            if (tttBoard[4] === '') return 4;
+            // 4. Pilih acak kotak tersisa
+            const empty = tttBoard.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+            return empty.length ? empty[Math.floor(Math.random() * empty.length)] : null;
+        }
+
+        function checkTttWin(player) {
+            for (const pattern of winPatterns) {
+                if (pattern.every(i => tttBoard[i] === player)) return pattern;
+            }
+            return null;
+        }
+
+        function updateTttScore() {
+            document.getElementById('ttt-score').textContent = `X: ${tttScores.X} | O: ${tttScores.O}`;
+        }
+
+        /* ================= 2. CLASSIC SNAKE ================= */
+        const canvas = document.getElementById('snake-canvas');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 16;
+        const tileCount = canvas.width / gridSize;
+
+        let snake = [];
+        let food = { x: 10, y: 10 };
+        let dx = 1, dy = 0;
+        let nextDx = 1, nextDy = 0;
+        let snakeScore = 0;
+        let snakeBest = 0;
+        let snakeLoop = null;
+
+        function startSnake() {
+            stopSnake();
+            snake = [{ x: 6, y: 10 }, { x: 5, y: 10 }, { x: 4, y: 10 }];
+            dx = 1; dy = 0;
+            nextDx = 1; nextDy = 0;
+            snakeScore = 0;
+            updateSnakeScore();
+            spawnFood();
+            document.getElementById('snake-status').textContent = 'Mainkan! Jangan tabrak dinding/ekor.';
+            snakeLoop = setInterval(tickSnake, 115);
+        }
+
+        function stopSnake() {
+            if (snakeLoop) {
+                clearInterval(snakeLoop);
+                snakeLoop = null;
+            }
+        }
+
+        function setSnakeDir(newDx, newDy) {
+            if (newDx !== 0 && dx !== 0) return;
+            if (newDy !== 0 && dy !== 0) return;
+            nextDx = newDx;
+            nextDy = newDy;
+        }
+
+        window.addEventListener('keydown', e => {
+            if (!document.getElementById('game-snake').classList.contains('active')) return;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') setSnakeDir(0, -1);
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') setSnakeDir(0, 1);
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') setSnakeDir(-1, 0);
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') setSnakeDir(1, 0);
+        });
+
+        function spawnFood() {
+            while (true) {
+                food.x = Math.floor(Math.random() * tileCount);
+                food.y = Math.floor(Math.random() * tileCount);
+                if (!snake.some(s => s.x === food.x && s.y === food.y)) break;
+            }
+        }
+
+        function tickSnake() {
+            dx = nextDx;
+            dy = nextDy;
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+            // Cek tabrakan dinding atau tubuh
+            if (
+                head.x < 0 || head.x >= tileCount ||
+                head.y < 0 || head.y >= tileCount ||
+                snake.some(s => s.x === head.x && s.y === head.y)
+            ) {
+                stopSnake();
+                document.getElementById('snake-status').textContent = '💥 Game Over! Klik Mulai untuk main lagi.';
+                return;
+            }
+
+            snake.unshift(head);
+
+            if (head.x === food.x && head.y === food.y) {
+                snakeScore += 10;
+                if (snakeScore > snakeBest) snakeBest = snakeScore;
+                updateSnakeScore();
+                spawnFood();
+            } else {
+                snake.pop();
+            }
+
+            drawSnake();
+        }
+
+        function drawSnake() {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Gambar makanan
+            ctx.fillStyle = '#f87171';
+            ctx.beginPath();
+            ctx.arc(
+                food.x * gridSize + gridSize / 2,
+                food.y * gridSize + gridSize / 2,
+                gridSize / 2 - 2,
+                0, Math.PI * 2
+            );
+            ctx.fill();
+
+            // Gambar ular
+            snake.forEach((seg, i) => {
+                ctx.fillStyle = i === 0 ? '#38bdf8' : '#4ade80';
+                ctx.fillRect(seg.x * gridSize + 1, seg.y * gridSize + 1, gridSize - 2, gridSize - 2);
+            });
+        }
+
+        function updateSnakeScore() {
+            document.getElementById('snake-score').textContent = `Skor: ${snakeScore} | Best: ${snakeBest}`;
+        }
+
+        /* ================= 3. MEMORY MATCH ================= */
+        const memEmojis = ['🚀', '🍕', '🎸', '🦊', '💎', '⚡', '🎮', '🌈'];
+        let memCards = [];
+        let flippedIndices = [];
+        let matchedCount = 0;
+        let memMoves = 0;
+        let memLocked = false;
+
+        function initMemory() {
+            memCards = [...memEmojis, ...memEmojis].sort(() => Math.random() - 0.5);
+            flippedIndices = [];
+            matchedCount = 0;
+            memMoves = 0;
+            memLocked = false;
+            document.getElementById('mem-moves').textContent = 'Langkah: 0';
+            document.getElementById('mem-status').textContent = 'Cari semua pasangan kartu!';
+            renderMemory();
+        }
+
+        function renderMemory() {
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = '';
+            memCards.forEach((emoji, idx) => {
+                const card = document.createElement('div');
+                card.className = 'mem-card hidden-card';
+                card.dataset.index = idx;
+                card.textContent = emoji;
+                card.onclick = () => flipMemCard(idx, card);
+                grid.appendChild(card);
+            });
+        }
+
+        function flipMemCard(idx, cardEl) {
+            if (memLocked) return;
+            if (!cardEl.classList.contains('hidden-card')) return;
+
+            cardEl.classList.remove('hidden-card');
+            flippedIndices.push({ idx, el: cardEl });
+
+            if (flippedIndices.length === 2) {
+                memMoves++;
+                document.getElementById('mem-moves').textContent = `Langkah: ${memMoves}`;
+                const [first, second] = flippedIndices;
+
+                if (memCards[first.idx] === memCards[second.idx]) {
+                    first.el.classList.add('matched');
+                    second.el.classList.add('matched');
+                    flippedIndices = [];
+                    matchedCount += 2;
+                    if (matchedCount === memCards.length) {
+                        document.getElementById('mem-status').textContent = `🏆 Selesai dalam ${memMoves} langkah!`;
+                    }
+                } else {
+                    memLocked = true;
+                    setTimeout(() => {
+                        first.el.classList.add('hidden-card');
+                        second.el.classList.add('hidden-card');
+                        flippedIndices = [];
+                        memLocked = false;
+                    }, 650);
+                }
+            }
+        }
+
+        /* ================= 4. ROCK PAPER SCISSORS ================= */
+        let rpsUserScore = 0;
+        let rpsBotScore = 0;
+        const rpsIcons = { batu: '✊', kertas: '✋', gunting: '✌️' };
+
+        function playRps(userChoice) {
+            const options = ['batu', 'kertas', 'gunting'];
+            const botChoice = options[Math.floor(Math.random() * 3)];
+
+            document.getElementById('rps-user-hand').textContent = rpsIcons[userChoice];
+            document.getElementById('rps-bot-hand').textContent = rpsIcons[botChoice];
+
+            const status = document.getElementById('rps-status');
+            if (userChoice === botChoice) {
+                status.textContent = '🤝 Seri! Pikiran kalian sama.';
+            } else if (
+                (userChoice === 'batu' && botChoice === 'gunting') ||
+                (userChoice === 'kertas' && botChoice === 'batu') ||
+                (userChoice === 'gunting' && botChoice === 'kertas')
+            ) {
+                rpsUserScore++;
+                status.textContent = '🎉 Kamu Menang ronde ini!';
+            } else {
+                rpsBotScore++;
+                status.textContent = '🤖 Bot Menang ronde ini!';
+            }
+
+            document.getElementById('rps-score').textContent = `Kamu: ${rpsUserScore} | Bot: ${rpsBotScore}`;
+        }
+
+        function resetRps() {
+            rpsUserScore = 0;
+            rpsBotScore = 0;
+            document.getElementById('rps-user-hand').textContent = '❔';
+            document.getElementById('rps-bot-hand').textContent = '❔';
+            document.getElementById('rps-score').textContent = 'Kamu: 0 | Bot: 0';
+            document.getElementById('rps-status').textContent = 'Pilih senjatamu di bawah!';
+        }
+    </script>
+</body>
+</html>
